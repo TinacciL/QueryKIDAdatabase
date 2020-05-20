@@ -6,7 +6,7 @@ import numpy as np
 def kida_info(url_mol):
     url =  requests.get("http://kida.astrophy.u-bordeaux.fr" + url_mol).text
     soup = BeautifulSoup(url,features="html.parser")
-    tables = soup.find_all("table", {"class":"table table-striped table-hover table-responsive"})
+    tables = soup.find_all("table")#, {"class":"table table-striped table-hover table-responsive"}
     if tables is not None:
         data_tables = []
         for table in tables:    
@@ -30,8 +30,11 @@ def kida_info(url_mol):
         info = None    
     if info is not None:
         ck = False
+        ck_de = False
         for j,data_table in enumerate(data_tables):
             if data_table.empty == False:
+                #with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                #    display(data_table)
                 if j==0:
                     '''
                     if data_table.iloc[0,0] == "Stoichiometric Formula":
@@ -55,9 +58,28 @@ def kida_info(url_mol):
                         t = data_table.iloc[k,1]
                         val = data_table.iloc[k,2]
                         ent.append([t,val])
+                if data_table.shape[1] == 11 and data_table.columns.values[6] == "Method":
+                    ck_de = True
+                    row_de = data_table.shape[0]
+                    de = []
+                    for k in range(row_de):
+                        #de_1 = data_table.iloc[k,0].replace(" ","").replace("\n","")
+                        de_2 = data_table.iloc[k,1].replace(" ","").replace("\n","")
+                        de_3 = data_table.iloc[k,2].replace(" ","").replace("\n","")
+                        de_4 = data_table.iloc[k,3].replace(" ","").replace("\n","")
+                        de_5 = data_table.iloc[k,4].replace(" ","").replace("\n","")
+                        de_6 = data_table.iloc[k,5].replace(" ","").replace("\n","")
+                        de_7 = data_table.iloc[k,6].replace(" ","").replace("\n","")
+                        de_8 = data_table.iloc[k,7].replace(" ","").replace("\n","")
+                        de_9 = data_table.iloc[k,8].replace(" ","").replace("\n","")
+                        de_10 = data_table.iloc[k,9].replace(" ","").replace("\n","")
+                        de_11 = data_table.iloc[k,10].replace("\n","")
+                        de.append([de_2,de_3,de_4,de_5,de_6,de_7,de_8,de_9,de_10,de_11])
         if ck == False:
-            ent = None                                        
-    return(info,ent,cas)
+            ent = None
+        if ck_de == False:
+            de = None                                        
+    return(info,ent,cas,de)
 
 def kida_mol():
     url =  requests.get("http://kida.astrophy.u-bordeaux.fr/species.html").text
@@ -111,62 +133,40 @@ def info_dataFormat(list_species):
     enthalpy = []
     temp = []
     cas = []
+    be = []
     for i in range(list_species.shape[0]):
-            ch_url = list_species.iloc[i,0]
-            tmp_spec = list_species.iloc[i,1]
-            tmp_spec = tmp_spec.replace("\n","")
-            tmp_spec = tmp_spec.replace(" ","")
-            species.append(tmp_spec)
-            tmp_form = list_species.iloc[i,2]
-            tmp_form = tmp_form.replace(" ","")
-            formula.append(tmp_form)
-            tmp_inchi = list_species.iloc[i,3].replace(" ","")
-            if tmp_inchi == "":
-              tmp_inchi = "NoData"  
-            Inchi.append(tmp_inchi)
-            ch_ent = kida_info(ch_url)
-            if ch_ent[0] == None or ch_ent[2] == None:
-                cas.append("NoData")
-            else:
-                tmp_cas = ch_ent[2]
-                tmp_cas = tmp_cas.replace(" ","")
-                if tmp_cas == "":
-                    tmp_cas = "NoData"
-                cas.append(tmp_cas)
-            if ch_ent[0] == None or ch_ent[1] == None:
-                enthalpy.append("NoData")
-                temp.append("NoData")
-            else:
-                tmp = ent_chose(ch_ent[1])
-                e = tmp[0]
-                t = tmp[1]
-                enthalpy.append(e)
-                temp.append(t)
-    return(species, formula, cas, Inchi, enthalpy, temp) 
-
-with open("molecules_kida_enthalpy.csv", "w+") as output:
-    list_species = kida_mol()
-    if list_species is not None:
-        info_spec = info_dataFormat(list_species)
-        species = info_spec[0]
-        formula = info_spec[1]
-        cas = info_spec[2]
-        Inchi = info_spec[3]
-        enthalpy = info_spec[4]
-        temp = info_spec[5]   
-    else:
-        print("Error in List Species")
-    data = []
-    for i in range(len(formula)):
-        data.append([species[i], formula[i], cas[i], Inchi[i], enthalpy[i], temp[i]])
-    df = pd.DataFrame(data, columns=["Species","Formula","CAS","Inchi","Enthalpy","T(K)"])
-    #print(df.to_csv(sep="\t", index=False))
-    output.write(df.to_csv(sep="\t", index=False))
-
-with open("formula_kida.csv", "w+") as output:
-    fr  = pd.DataFrame(['Formula'])
-    fr['formula'] = df['Formula']
-
-    print(fr)
-
-    exc = ["***","GRAIN0","GRAIN-","GRAIN+","XH","e-","e","CR","CRP","Photon"]
+        ch_url = list_species.iloc[i,0]
+        tmp_spec = list_species.iloc[i,1]
+        tmp_spec = tmp_spec.replace("\n","")
+        tmp_spec = tmp_spec.replace(" ","")
+        species.append(tmp_spec)
+        tmp_form = list_species.iloc[i,2]
+        tmp_form = tmp_form.replace(" ","")
+        formula.append(tmp_form)
+        tmp_inchi = list_species.iloc[i,3].replace(" ","")
+        if tmp_inchi == "":
+            tmp_inchi = "NoData"  
+        Inchi.append(tmp_inchi)
+        ch_ent = kida_info(ch_url)
+        if ch_ent[0] == None or ch_ent[2] == None:
+            cas.append("NoData")
+        else:
+            tmp_cas = ch_ent[2]
+            tmp_cas = tmp_cas.replace(" ","")
+            if tmp_cas == "":
+                tmp_cas = "NoData"
+            cas.append(tmp_cas)
+        if ch_ent[0] == None or ch_ent[1] == None:
+            enthalpy.append("NoData")
+            temp.append("NoData")
+        else:
+            tmp = ent_chose(ch_ent[1])
+            e = tmp[0]
+            t = tmp[1]
+            enthalpy.append(e)
+            temp.append(t)
+        if ch_ent[0] == None or ch_ent[3] == None:
+            be.append("NoData")
+        else:
+            be.append(ch_ent[3])
+    return(species, formula, cas, Inchi, enthalpy, temp, be)
